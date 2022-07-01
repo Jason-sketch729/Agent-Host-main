@@ -1,0 +1,30 @@
+# Development and publication
+
+Use one clone of `https://github.com/zhoushoujianwork/Agent-Host.git` for daily
+development. `main` tracks `origin/main`; local changes and public updates use
+the same Git history. There is no separately maintained public-source export.
+
+Develop features in branches or temporary worktrees when useful. Before
+committing, review the diff, run `make check`, and stage only the intended files.
+Integrate reviewed commits into `main` and publish authorized updates with a
+normal push. Preserve the existing public history; do not force-push a private
+repository's unrelated history.
+
+Keep real accounts, credentials, configuration, database state and execution
+reports outside Git, normally in the project's ignored `.agent-host/` tree.
+`make run` loads enabled `.agent-host/config/channels.*.json` components through the
+Go CLI. Explicit `RUNTIME_ROOT` retains the legacy single-runtime path;
+ordinary CLI state uses
+`.agent-host/cli-state`. Commit configuration
+examples with placeholders. The ignore rules are a safeguard, not a substitute
+for reviewing files before publication. Private historical validation reports
+are kept locally rather than copied into the public repository. Before operating
+a service, check `.agent-host/production-migration.json`: a relocated production
+runtime is independent of this checkout. `make build` and automated tests do not
+deploy it; use separate configuration and channel identities for development.
+See [production separation](service-install.md#separate-production-from-development).
+
+Distribution is source-only. Users clone this repository and run `make build`
+locally, using their own native harness, accounts and credentials. Normal
+publication updates GitHub source commits; it does not create GitHub Releases
+or upload binary assets. See the [source setup guide](beta-release.md).

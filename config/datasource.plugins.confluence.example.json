@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "enabled": false,
+  "settings": {
+    "sources": [
+      {
+        "name": "company",
+        "endpoint": "https://confluence.example.invalid",
+        "credential_file": "credentials/confluence.json",
+        "principal": "owner",
+        "description": "Company Confluence pages"
+      }
+    ]
+  }
+}

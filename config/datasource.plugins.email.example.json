@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "enabled": false,
+  "settings": {
+    "accounts": [
+      {
+        "id": "owner",
+        "address": "owner@163.com",
+        "provider": "163",
+        "credential_file": "credentials/email-owner.secret",
+        "send_enabled": false
+      }
+    ]
+  }
+}

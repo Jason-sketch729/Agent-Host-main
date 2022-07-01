@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "enabled": false,
+  "settings": {
+    "sources": [
+      {
+        "name": "company",
+        "endpoint": "https://dokki.example.invalid/api/v1",
+        "credential_file": "credentials/dokki.json",
+        "principal": "owner",
+        "description": "Company Dokki knowledge"
+      }
+    ]
+  }
+}

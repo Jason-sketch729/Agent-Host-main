@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "enabled": false,
+  "settings": {
+    "sources": [
+      {
+        "name": "owner_notes",
+        "root": "../knowledge/owner",
+        "paths": ["notes"],
+        "principal": "local-owner",
+        "description": "Private local Markdown notes"
+      }
+    ]
+  }
+}
