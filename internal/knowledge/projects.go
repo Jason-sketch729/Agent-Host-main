@@ -1,0 +1,153 @@
+package knowledge
+
+import (
+	"errors"
+	"slices"
+	"sort"
+	"strings"
+
+	"agent-host/internal/componentconfig"
+)
+
+// SelectProjects resolves global datasource plugins and project-selected legacy
+// sources. A neutral cwd does not add legacy default-project permissions.
+func SelectProjects(path string, ids []string) ([]ResolvedSource, error) {
+	return SelectAgentProjects(path, ids, nil)
+}
+
+// SelectAgentProjects narrows legacy sources before opening credentials.
+// Enabled unified datasource plugins always resolve all their sources.
+func SelectAgentProjects(path string, ids, names []string) ([]ResolvedSource, error) {
+	return SelectAgentAudienceProjects(path, ids, names, "owner")
+}
+
+// SelectAgentAudienceProjects applies access selectors only to legacy sources.
+// Unified datasource plugins are global.
+func SelectAgentAudienceProjects(path string, ids, names []string, audience string) ([]ResolvedSource, error) {
+	if path == "" {
+		return nil, nil
+	}
+	return SelectMany([]string{path}, ids, names, audience, "")
+}
+
+func Catalog(paths []string, channel string) ([]Source, error) {
+	var sources []Source
+	seen := map[string]bool{}
+	for _, path := range paths {
+		c, err := Load(path)
+		if err != nil {
+			return nil, err
+		}
+		for _, source := range c.Sources {
+			if seen[source.Name] {
+				return nil, errors.New("duplicate datasource source identity")
+			}
+			seen[source.Name] = true
+			sources = append(sources, source)
+		}
+	}
+	return sources, nil
+}
+
+// ResolveNames allows a legacy short reference only when its meaning is unique.
+func ResolveNames(sources []Source, names []string) ([]string, error) {
+	if names == nil {
+		return nil, nil
+	}
+	resolved := make([]string, 0, len(names))
+	for _, name := range names {
+		var matches []string
+		for _, source := range sources {
+			if source.Name == name || !strings.Contains(name, ":") && strings.HasSuffix(source.Name, ":"+name) {
+				matches = append(matches, source.Name)
+			}
+		}
+		if len(matches) != 1 {
+			return nil, errors.New("knowledge source reference is unavailable or ambiguous; use plugin:source")
+		}
+		resolved = append(resolved, matches[0])
+	}
+	return resolved, nil
+}
+
+func SelectMany(paths, ids, names []string, audience, channel string) ([]ResolvedSource, error) {
+	return selectMany(paths, ids, names, audience, channel, nil)
+}
+
+// SelectManyGranted intersects normal source selection with exact Host grants
+// before opening credentials. An empty grant list deliberately selects nothing.
+func SelectManyGranted(paths, ids, names []string, audience, channel string, grants []string) ([]ResolvedSource, error) {
+	if len(grants) == 0 {
+		return nil, nil
+	}
+	return selectMany(paths, ids, names, audience, channel, grants)
+}
+
+func selectMany(paths, ids, names []string, audience, channel string, grants []string) ([]ResolvedSource, error) {
+	sources, err := Catalog(paths, channel)
+	if err != nil {
+		return nil, err
+	}
+	// Global datasource plugins do not use Agent, project or audience selectors.
+	if !allGlobalSources(sources) {
+		names, err = ResolveNames(sources, names)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if len(ids) == 0 {
+		ids = []string{"default"}
+	}
+	if audience == "" {
+		audience = "owner"
+	}
+	selectedIDs := make(map[string]bool, len(ids))
+	for _, id := range ids {
+		selectedIDs[id] = true
+	}
+	var selected []ResolvedSource
+	for _, source := range sources {
+		if grants != nil && !slices.Contains(grants, source.Name) {
+			continue
+		}
+		if globalSource(source) {
+			r, err := resolve(source)
+			if err != nil {
+				return nil, err
+			}
+			selected = append(selected, r)
+			continue
+		}
+		if names != nil && !slices.Contains(names, source.Name) {
+			continue
+		}
+		if source.Audiences != nil && !slices.Contains(source.Audiences, audience) {
+			continue
+		}
+		for _, id := range source.Projects {
+			if selectedIDs[id] {
+				r, err := resolve(source)
+				if err != nil {
+					return nil, err
+				}
+				selected = append(selected, r)
+				break
+			}
+		}
+	}
+	sort.Slice(selected, func(i, j int) bool { return selected[i].Source.Name < selected[j].Source.Name })
+	return selected, nil
+}
+
+func globalSource(source Source) bool {
+	return componentconfig.DataSourceID(source.ConfigPath) != ""
+}
+
+func allGlobalSources(sources []Source) bool {
+	for _, source := range sources {
+		if !globalSource(source) {
+			return false
+		}
+	}
+	return true
+}
