@@ -1,0 +1,15 @@
+/* Panels share the outer navigation; domain filters remain inside each panel. */
+.embedded body[data-page] .topbar,.embedded body[data-page] .page-top { display: none; }
+.embedded [data-page="memory"] .rail .brand,.embedded [data-page="memory"] .rail-nav,
+.embedded [data-page="memory"] .rail-label:first-of-type,.embedded [data-page="memory"] .rail-note,
+.embedded [data-page="memory"] .rail-foot { display: none; }
+.embedded [data-page="memory"] .rail { width: 180px; padding: 24px 12px; }
+.embedded [data-page="memory"] main { margin-left: 180px; }
+.embedded [data-page="memory"] .rail-separator { margin-top: 0; }
+.embedded [data-page="executions"] .brand,.embedded [data-page="executions"] .standalone-link,
+.embedded [data-page="executions"] .sidebar-foot { display: none; }
+.embedded [data-page="executions"] .nav-label { padding-top: 24px; }
+@media(max-width:800px) {
+  .embedded [data-page="memory"] .rail { display: none; }
+  .embedded [data-page="memory"] main { margin-left: 0; }
+}
